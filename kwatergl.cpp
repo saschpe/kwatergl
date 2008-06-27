@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <QDesktopWidget>
+#include <QTimer>
 #include <KApplication>
 #include <KDebug>
 
@@ -149,14 +150,14 @@ void KWaterGLWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glLoadIdentity();
 
-	glTranslate(-1.5f, 0.0f, -6.0f);
+	glTranslatef(-1.5f, 0.0f, -6.0f);
 	glBegin(GL_TRIANGLES);
 		glColor3f(1.0f, 0.0f, 0.0f); glVertex3f( 0.0f,  1.0f, 0.0f);
 		glColor3f(0.0f, 1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
-		glCOlor3f(0.0f, 0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, 0.0f);
 	glEnd();
 
-	glTranslate(3.0f, 0.0f, 0.0f);
+	glTranslatef(3.0f, 0.0f, 0.0f);
 	glBegin(GL_QUADS);
 		glVertex3f(-1.0f, 1.0f, 0.0f);
 		glVertex3f( 1.0f, 1.0f, 0.0f);
@@ -165,12 +166,13 @@ void KWaterGLWidget::paintGL()
 	glEnd();
 
 	glFlush();
+	QTimer::singleShot(25, this, SLOT(updateGL()));
 }
 
 void KWaterGLWidget::resizeGL(int width, int height)
 {
 	if (height == 0)
-		heigth = 1;
+		height = 1;
 
 	glViewport(0, 0, width, height);// Reset the current viewport
 	glMatrixMode(GL_PROJECTION);	// Select the projection matrix
@@ -185,18 +187,11 @@ void KWaterGLWidget::resizeGL(int width, int height)
 
 KWaterScreenSaver::KWaterScreenSaver(WId id)
 	: KScreenSaver(id)
-	m_water(KWaterGLWidget())
 {
 	readSettings();
-	embed(m_water);
-	m_water->show();
-	connect(&m_timer, SIGNAL(timeout()), m_water, SLOT(updateGL()));
-	m_timer.start(25);
-}
-
-KWaterScreenSaver::~KWaterScreenSaver()
-{
-	m_timer.stop();
+	embed(&m_water);
+	m_water.show();
+	QTimer::singleShot(25, &m_water, SLOT(updateGL()));
 }
 
 void KWaterScreenSaver::readSettings()

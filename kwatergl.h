@@ -30,7 +30,6 @@
 #ifndef KWATERGL_H
 #define KWATERGL_H
 
-#include <QGL>
 #ifdef Q_WS_MACX
 # include <OpenGL/gl.h>
 # include <OpenGL/glu.h>
@@ -38,7 +37,7 @@
 # include <GL/gl.h>
 # include <GL/glu.h>
 #endif
-#include <QTimer>
+#include <QGLWidget>
 #include <QPixmap>
 #include <KDialog>
 #include <kscreensaver.h>
@@ -51,7 +50,7 @@ class KWaterGLWidget : public QGLWidget
 	Q_OBJECT
 
 public:
-	explicit KWaterGLWidget(QWidget *parent = 0);
+	KWaterGLWidget(QWidget *parent = 0);
 	~KWaterGLWidget();
 
 protected:
@@ -78,12 +77,10 @@ class KWaterScreenSaver : public KScreenSaver
 
 public:
 	explicit KWaterScreenSaver(WId id);
-	~KWaterScreenSaver();
 
 private:
 	void readSettings();
 
-	QTimer m_timer;
 	KWaterGLWidget m_water;
 };
 
