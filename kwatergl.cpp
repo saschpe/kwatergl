@@ -35,11 +35,116 @@
 #include <KApplication>
 #include <KDebug>
 
-	/*, m_desktopPixmap(QPixmap::grabWindow(KApplication::desktop()->winId()))
-	, m_cur(&m_water1)
-	, m_old(&m_water2)*/
+KWaterGLWidget::KWaterGLWidget(QWidget *parent)
+	: QGLWidget(parent)
+	, m_desktopPixmap(QPixmap::grabWindow(KApplication::desktop()->winId()))
+{
+}
 
-/*void KWaterScreenSaver::resizeEvent(QResizeEvent *event)
+KWaterGLWidget::~KWaterGLWidget()
+{
+	glDetachShader(m_p, m_vs1);
+	glDetachShader(m_p, m_fs1);
+
+	glDeleteShader(m_vs1);
+	glDeleteShader(m_fs1);
+	glDeleteProgram(m_p);
+}
+
+void KWaterGLWidget::initializeGL()
+{
+	glShadeModel(GL_SMOOTH);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClearDepth(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	
+	const GLchar *vs1_source = 
+		"varying vec3 normal, lightDir;"
+		"void main() {"
+		"    lightDir = normalize(vec3(gl_LightSource[0].position);"
+		"    normal = normalize(gl_NormalMatrix * gl_Normal);"
+		"    gl_Position = ftransform();"
+		"}";
+	const GLchar *fs1_source = 
+		"varying vec3 normal, lightDir;"
+		"void main() {"
+		"    float intensity;"
+		"    vec3 n;"
+		"    vec4 color;"
+		"    n = normalize(normal);"
+		"    intensity = max(dot(lightDir, n), 0.0);"
+		"    if (intensity > 0.98)"
+		"        color = vec4(0.8, 0.8, 0.8, 1.0);"
+		"    else if (intensity > 0.5)"
+		"        color = vec4(0.4, 0.4, 0.8, 1.0);"
+		"    else if (intensity > 0.25)"
+		"        color = vec4(0.2, 0.2, 0.4, 1.0);"
+		"    else"
+		"        color = vec4(0.1, 0.1, 0.1, 1.0);"
+		"    gl_FragColor = color;"
+		"}";
+
+	m_vs1 = glCreateShader(GL_VERTEX_SHADER);
+	m_fs1 = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(m_vs1, 1, &vs1_source, 0);
+	glShaderSource(m_fs1, 1, &fs1_source, 0);
+
+	glCompileShader(m_vs1);
+	glCompileShader(m_fs1);
+
+	m_p = glCreateProgram();
+	glAttachShader(m_p, m_vs1);
+	glAttachShader(m_p, m_fs1);
+	glLinkProgram(m_p);
+	
+	glUseProgram(m_p);
+}
+
+void KWaterGLWidget::paintGL()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glLoadIdentity();
+
+	glTranslatef(-1.5f, 0.0f, -6.0f);
+	glBegin(GL_TRIANGLES);
+		glColor3f(1.0f, 0.0f, 0.0f); glVertex3f( 0.0f,  1.0f, 0.0f);
+		glColor3f(0.0f, 1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, 0.0f);
+	glEnd();
+
+	glTranslatef(3.0f, 0.0f, 0.0f);
+	glBegin(GL_QUADS);
+		glVertex3f(-1.0f, 1.0f, 0.0f);
+		glVertex3f( 1.0f, 1.0f, 0.0f);
+		glVertex3f( 1.0f,-1.0f, 0.0f);
+		glVertex3f(-1.0f,-1.0f, 0.0f);
+	glEnd();
+
+	glFlush();
+	QTimer::singleShot(25, this, SLOT(updateGL()));
+}
+
+void KWaterGLWidget::resizeGL(int width, int height)
+{
+	if (height == 0)
+		height = 1;
+
+	glViewport(0, 0, width, height);// Reset the current viewport
+	glMatrixMode(GL_PROJECTION);	// Select the projection matrix
+	glLoadIdentity();				// And reset it
+	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 200.0f);
+	glMatrixMode(GL_MODELVIEW);		// Select the modelview matrix
+	glLoadIdentity();				// And reset it
+}
+
+/*, m_desktopPixmap(QPixmap::grabWindow(KApplication::desktop()->winId()))
+, m_cur(&m_water1)
+, m_old(&m_water2)
+
+void KWaterScreenSaver::resizeEvent(QResizeEvent *event)
 {
 	m_backgroundImage = m_desktopPixmap.scaled(event->size()).toImage();
 	m_waterImage = QImage(event->size(), m_backgroundImage.format());
@@ -123,64 +228,6 @@ void KWaterScreenSaver::timeout()
 	}
 	update();
 }*/
-
-KWaterGLWidget::KWaterGLWidget(QWidget *parent)
-	: QGLWidget(parent)
-	, m_desktopPixmap(QPixmap::grabWindow(KApplication::desktop()->winId()))
-{
-}
-
-KWaterGLWidget::~KWaterGLWidget()
-{
-}
-
-void KWaterGLWidget::initializeGL()
-{
-	glShadeModel(GL_SMOOTH);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClearDepth(1.0f);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    //glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-}
-
-void KWaterGLWidget::paintGL()
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	glLoadIdentity();
-
-	glTranslatef(-1.5f, 0.0f, -6.0f);
-	glBegin(GL_TRIANGLES);
-		glColor3f(1.0f, 0.0f, 0.0f); glVertex3f( 0.0f,  1.0f, 0.0f);
-		glColor3f(0.0f, 1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
-		glColor3f(0.0f, 0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, 0.0f);
-	glEnd();
-
-	glTranslatef(3.0f, 0.0f, 0.0f);
-	glBegin(GL_QUADS);
-		glVertex3f(-1.0f, 1.0f, 0.0f);
-		glVertex3f( 1.0f, 1.0f, 0.0f);
-		glVertex3f( 1.0f,-1.0f, 0.0f);
-		glVertex3f(-1.0f,-1.0f, 0.0f);
-	glEnd();
-
-	glFlush();
-	QTimer::singleShot(25, this, SLOT(updateGL()));
-}
-
-void KWaterGLWidget::resizeGL(int width, int height)
-{
-	if (height == 0)
-		height = 1;
-
-	glViewport(0, 0, width, height);// Reset the current viewport
-	glMatrixMode(GL_PROJECTION);	// Select the projection matrix
-	glLoadIdentity();				// And reset it
-	//gluPerspective(45.0f, (GLFloat)width / (GLFloat)height, 0.1f, 200.0f);
-	glMatrixMode(GL_MODELVIEW);		// Select the modelview matrix
-	glLoadIdentity();				// And reset it
-}
 
 //----------------------------------------------------------------------------
 

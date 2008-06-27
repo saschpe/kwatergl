@@ -31,12 +31,14 @@
 #define KWATERGL_H
 
 #ifdef Q_WS_MACX
-# include <OpenGL/gl.h>
-# include <OpenGL/glu.h>
+#  include <OpenGL/glew.h>
 #else
-# include <GL/gl.h>
-# include <GL/glu.h>
+#  include <GL/glew.h>
 #endif
+#ifndef GL_VERSION_2_1
+#  error OpenGL version 2.1 or later needed
+#endif
+
 #include <QGLWidget>
 #include <QPixmap>
 #include <KDialog>
@@ -50,7 +52,7 @@ class KWaterGLWidget : public QGLWidget
 	Q_OBJECT
 
 public:
-	KWaterGLWidget(QWidget *parent = 0);
+	explicit KWaterGLWidget(QWidget *parent = 0);
 	~KWaterGLWidget();
 
 protected:
@@ -60,6 +62,9 @@ protected:
 
 private:
 	QPixmap m_desktopPixmap;		///< Current desktop
+	GLuint m_vs1;
+	GLuint m_fs1;
+	GLuint m_p;
 	/*QImage m_backgroundImage;		///< Scaled desktop
 	QImage m_waterImage;			///< Water effect paint target
 	QVector<int> m_water1;			///< Used for the water algorithm
@@ -98,8 +103,6 @@ public:
 protected:
 	void updateSettings();
 	void readSettings();
-
-private:
 };
 
 #endif
