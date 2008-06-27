@@ -32,8 +32,10 @@
 
 #ifdef Q_WS_MACX
 #  include <OpenGL/glew.h>
+#  include <OpenGL/glut.h>
 #else
 #  include <GL/glew.h>
+#  include <GL/glut.h>
 #endif
 #ifndef GL_VERSION_2_1
 #  error OpenGL version 2.1 or later needed
@@ -62,8 +64,8 @@ protected:
 
 private:
 	QPixmap m_desktopPixmap;		///< Current desktop
-	GLuint m_vs1;
-	GLuint m_fs1;
+	GLuint m_vs;
+	GLuint m_fs;
 	GLuint m_p;
 	/*QImage m_backgroundImage;		///< Scaled desktop
 	QImage m_waterImage;			///< Water effect paint target

@@ -35,6 +35,32 @@
 #include <KApplication>
 #include <KDebug>
 
+const GLchar *s_vss = 
+		"varying vec3 normal, lightDir;\n"
+		"void main() {\n"
+		"    lightDir = normalize(vec3(gl_LightSource[0].position);\n"
+		"    normal = normalize(gl_NormalMatrix * gl_Normal);\n"
+		"    gl_Position = ftransform();\n"
+		"}\n";
+const GLchar *s_fss = 
+		"varying vec3 normal, lightDir;\n"
+		"void main() {\n"
+		"    float intensity;\n"
+		"    vec3 n;\n"
+		"    vec4 color;\n"
+		"    n = normalize(normal);\n"
+		"    intensity = max(dot(lightDir, n), 0.0);\n"
+		"    if (intensity > 0.98)\n"
+		"        color = vec4(0.8, 0.8, 0.8, 1.0);\n"
+		"    else if (intensity > 0.5)\n"
+		"        color = vec4(0.4, 0.4, 0.8, 1.0);\n"
+		"    else if (intensity > 0.25)\n"
+		"        color = vec4(0.2, 0.2, 0.4, 1.0);\n"
+		"    else\n"
+		"        color = vec4(0.1, 0.1, 0.1, 1.0);\n"
+		"    gl_FragColor = color;\n"
+		"}";
+
 KWaterGLWidget::KWaterGLWidget(QWidget *parent)
 	: QGLWidget(parent)
 	, m_desktopPixmap(QPixmap::grabWindow(KApplication::desktop()->winId()))
@@ -43,11 +69,11 @@ KWaterGLWidget::KWaterGLWidget(QWidget *parent)
 
 KWaterGLWidget::~KWaterGLWidget()
 {
-	glDetachShader(m_p, m_vs1);
-	glDetachShader(m_p, m_fs1);
+	glDetachShader(m_p, m_vs);
+	glDetachShader(m_p, m_fs);
 
-	glDeleteShader(m_vs1);
-	glDeleteShader(m_fs1);
+	glDeleteShader(m_vs);
+	glDeleteShader(m_fs);
 	glDeleteProgram(m_p);
 }
 
@@ -59,45 +85,21 @@ void KWaterGLWidget::initializeGL()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	int argc = QCoreApplication::argc();
+	glutInit(&argc, QCoreApplication::argv());
 	
-	const GLchar *vs1_source = 
-		"varying vec3 normal, lightDir;"
-		"void main() {"
-		"    lightDir = normalize(vec3(gl_LightSource[0].position);"
-		"    normal = normalize(gl_NormalMatrix * gl_Normal);"
-		"    gl_Position = ftransform();"
-		"}";
-	const GLchar *fs1_source = 
-		"varying vec3 normal, lightDir;"
-		"void main() {"
-		"    float intensity;"
-		"    vec3 n;"
-		"    vec4 color;"
-		"    n = normalize(normal);"
-		"    intensity = max(dot(lightDir, n), 0.0);"
-		"    if (intensity > 0.98)"
-		"        color = vec4(0.8, 0.8, 0.8, 1.0);"
-		"    else if (intensity > 0.5)"
-		"        color = vec4(0.4, 0.4, 0.8, 1.0);"
-		"    else if (intensity > 0.25)"
-		"        color = vec4(0.2, 0.2, 0.4, 1.0);"
-		"    else"
-		"        color = vec4(0.1, 0.1, 0.1, 1.0);"
-		"    gl_FragColor = color;"
-		"}";
+	m_vs = glCreateShader(GL_VERTEX_SHADER);
+	m_fs = glCreateShader(GL_FRAGMENT_SHADER);
 
-	m_vs1 = glCreateShader(GL_VERTEX_SHADER);
-	m_fs1 = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(m_vs, 1, &s_vss, 0);
+	glShaderSource(m_fs, 1, &s_fss, 0);
 
-	glShaderSource(m_vs1, 1, &vs1_source, 0);
-	glShaderSource(m_fs1, 1, &fs1_source, 0);
-
-	glCompileShader(m_vs1);
-	glCompileShader(m_fs1);
+	glCompileShader(m_vs);
+	glCompileShader(m_fs);
 
 	m_p = glCreateProgram();
-	glAttachShader(m_p, m_vs1);
-	glAttachShader(m_p, m_fs1);
+	glAttachShader(m_p, m_vs);
+	glAttachShader(m_p, m_fs);
 	glLinkProgram(m_p);
 	
 	glUseProgram(m_p);
@@ -108,20 +110,8 @@ void KWaterGLWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glLoadIdentity();
 
-	glTranslatef(-1.5f, 0.0f, -6.0f);
-	glBegin(GL_TRIANGLES);
-		glColor3f(1.0f, 0.0f, 0.0f); glVertex3f( 0.0f,  1.0f, 0.0f);
-		glColor3f(0.0f, 1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
-		glColor3f(0.0f, 0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, 0.0f);
-	glEnd();
-
-	glTranslatef(3.0f, 0.0f, 0.0f);
-	glBegin(GL_QUADS);
-		glVertex3f(-1.0f, 1.0f, 0.0f);
-		glVertex3f( 1.0f, 1.0f, 0.0f);
-		glVertex3f( 1.0f,-1.0f, 0.0f);
-		glVertex3f(-1.0f,-1.0f, 0.0f);
-	glEnd();
+	glTranslatef(0.0f, 0.0f, -6.0f);
+	glutSolidTeapot(1.0f);
 
 	glFlush();
 	QTimer::singleShot(25, this, SLOT(updateGL()));
